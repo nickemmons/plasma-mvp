@@ -1,11 +1,10 @@
 import json
-import web3
 import os
 from ethereum.tools import tester as t
-from ethereum.tools import _solidity
 from solc import compile_standard
 from web3.contract import ConciseContract
 from web3 import Web3, HTTPProvider
+from plasma.config import plasma_config
 
 
 OWN_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -34,13 +33,17 @@ class Deployer(object):
                                         allow_paths=OWN_DIR + "/contracts")
         abi = compiled_sol['contracts'][file_name][contract_name]['abi']
         bytecode = compiled_sol['contracts'][file_name][contract_name]['evm']['bytecode']['object']
-        contract_file = open("contract_data/%s.json" % (file_name.split('.')[0]), "w+")
+
+        # Create the contract_data folder if it doesn't already exist
+        os.makedirs('contract_data', exist_ok=True)
+
+        contract_file = open('contract_data/%s.json' % (file_name.split('.')[0]), "w+")
         json.dump(abi, contract_file)
         contract_file.close()
-        return abi, bytecode
+        return abi, bytecode, contract_name
 
     def create_contract(self, path, args=(), gas=4410000, sender=t.k0):
-        abi, bytecode = self.compile_contract(path, args)
+        abi, bytecode, contract_name = self.compile_contract(path, args)
         contract = self.w3.eth.contract(abi=abi, bytecode=bytecode)
 
         # Get transaction hash from deployed contract
@@ -52,4 +55,10 @@ class Deployer(object):
 
         # Contract instance in concise mode
         contract_instance = self.w3.eth.contract(abi, contract_address, ContractFactoryClass=ConciseContract)
+        print("Successfully deployed {} contract!".format(contract_name))
         return contract_instance
+
+    def get_contract(self, path):
+        file_name = path.split('/')[1]
+        abi = json.load(open('contract_data/%s.json' % (file_name.split('.')[0])))
+        return self.w3.eth.contract(abi, plasma_config['ROOT_CHAIN_CONTRACT_ADDRESS'])

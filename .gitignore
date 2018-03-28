@@ -1,5 +1,9 @@
 # Bytecode
-__pycache__/
+**/__pycache__/
+
+# Development
+venv/
+.vscode/
 
 # Distibution
 dist/
@@ -7,3 +11,8 @@ dist/
 
 # Testing
 .cache/
+.pytest_cache/
+contract_data/
+
+*.pyc
+build/
