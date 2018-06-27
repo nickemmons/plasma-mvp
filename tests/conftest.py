@@ -1,13 +1,18 @@
+import os
 import pytest
 from ethereum.tools import tester, _solidity
 from ethereum.abi import ContractTranslator
 from ethereum import utils
 from plasma.utils import utils as plasma_utils
 from plasma.root_chain.deployer import Deployer
-import os
+from testing_lang.testing_language import TestingLanguage
 
 
 OWN_DIR = os.path.dirname(os.path.realpath(__file__))
+
+# Compile contracts once before tests start
+deployer = Deployer()
+deployer.compile_all()
 
 
 @pytest.fixture
@@ -49,7 +54,7 @@ def u():
 @pytest.fixture
 def get_contract(t, u):
     def create_contract(path, args=(), sender=t.k0):
-        abi, hexcode, _ = Deployer().compile_contract(path, args)
+        abi, hexcode = deployer.get_contract_data(path)
         bytecode = u.decode_hex(hexcode)
         ct = ContractTranslator(abi)
         code = bytecode + (ct.encode_constructor_arguments(args) if args else b'')
@@ -63,3 +68,8 @@ def bytes_helper():
     def bytes_helper(inp, length):
         return bytes(length - len(inp)) + inp
     return bytes_helper
+
+
+@pytest.fixture()
+def test_lang():
+    return TestingLanguage()
